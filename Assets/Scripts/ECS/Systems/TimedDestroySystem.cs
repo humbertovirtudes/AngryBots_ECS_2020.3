@@ -4,6 +4,7 @@ using Unity.Transforms;
 using UnityEngine;
 
 [UpdateAfter(typeof(MoveForwardSystem))]
+[AlwaysSynchronizeSystem]
 public class TimedDestroySystem : JobComponentSystem {
 
   protected override JobHandle OnUpdate(JobHandle inputDeps) {

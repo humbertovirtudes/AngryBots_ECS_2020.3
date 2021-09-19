@@ -1,15 +1,20 @@
 ﻿using Unity.Entities;
+using Unity.Jobs;
 using Unity.Transforms;
 
 [UpdateBefore(typeof(CollisionSystem))]
-public class PlayerTransformUpdateSystem : ComponentSystem {
+public class PlayerTransformUpdateSystem : JobComponentSystem {
 
-  protected override void OnUpdate() {
-    if (Settings.IsPlayerDead())
-      return;
+  protected override JobHandle OnUpdate(JobHandle inputDeps) {
+    Entities
+      .WithoutBurst()
+      .WithAll<PlayerTag>()
+      .ForEach((ref Translation pos) => {
+        if (Settings.IsPlayerDead())
+          return;
+        pos.Value = Settings.PlayerPosition;
+      }).Run();
 
-    Entities.WithAll<PlayerTag>().ForEach((ref Translation pos) => {
-      pos = new Translation { Value = Settings.PlayerPosition };
-    });
+    return default;
   }
 }

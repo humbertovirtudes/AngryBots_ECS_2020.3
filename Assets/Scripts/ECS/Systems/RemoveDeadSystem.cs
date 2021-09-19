@@ -1,19 +1,34 @@
 ﻿using Unity.Entities;
+using Unity.Jobs;
 using Unity.Transforms;
 
 [UpdateInGroup(typeof(InitializationSystemGroup))]
-public class RemoveDeadSystem : ComponentSystem {
+[AlwaysSynchronizeSystem]
+public class RemoveDeadSystem : SystemBase {
 
   protected override void OnUpdate() {
-    Entities.ForEach((Entity entity, ref Health health, ref Translation pos) => {
-      if (health.Value <= 0) {
-        if (EntityManager.HasComponent(entity, typeof(PlayerTag))) {
+    EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Unity.Collections.Allocator.TempJob);
+
+    Entities
+      .WithAny<PlayerTag>()
+      .WithoutBurst()
+      .ForEach((Entity entity, in Health health) => {
+        if (health.Value <= 0) {
           Settings.PlayerDied();
-        } else if (EntityManager.HasComponent(entity, typeof(EnemyTag))) {
-          PostUpdateCommands.DestroyEntity(entity);
+        }
+      }).Run();
+
+    Entities
+      .WithAny<EnemyTag>()
+      .WithoutBurst()
+      .ForEach((Entity entity, in Health health, in Translation pos) => {
+        if (health.Value <= 0) {
+          commandBuffer.DestroyEntity(entity);
           BulletImpactPool.PlayBulletImpact(pos.Value);
         }
-      }
-    });
+      }).Run();
+
+    commandBuffer.Playback(EntityManager);
+    commandBuffer.Dispose();
   }
 }

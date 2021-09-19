@@ -10,14 +10,14 @@ namespace Unity.Transforms {
 
       float dt = Time.DeltaTime;
 
-      Entities
+      JobHandle jobHandle = Entities
         .WithAll<MoveForward>()
         .WithBurst()
-        .ForEach((ref Translation pos, ref Rotation rot, ref MoveSpeed speed) => {
+        .ForEach((ref Translation pos, in Rotation rot, in MoveSpeed speed) => {
           pos.Value = pos.Value + (dt * speed.Value * math.forward(rot.Value));
-        }).Run();
+        }).Schedule(inputDeps);
 
-      return default;
+      return jobHandle;
     }
   }
 }
